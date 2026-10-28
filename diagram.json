@@ -1,0 +1,252 @@
+{
+  "version": 1,
+  "author": "ANA JULIA PIRES OLIVEIRA",
+  "editor": "wokwi",
+  "parts": [
+    {
+      "type": "board-esp32-devkit-c-v4",
+      "id": "esp",
+      "top": 0,
+      "left": 0,
+      "attrs": {
+        "builder": "esp-idf"
+      }
+    },
+    {
+      "type": "wokwi-led",
+      "id": "led1",
+      "top": -3.6,
+      "left": -217,
+      "attrs": {
+        "color": "green",
+        "label": "LED VERDE GPIO17"
+      }
+    },
+    {
+      "type": "wokwi-led",
+      "id": "led2",
+      "top": 44.4,
+      "left": -217,
+      "attrs": {
+        "color": "yellow",
+        "label": "LED AMARELO GPIO18"
+      }
+    },
+    {
+      "type": "wokwi-led",
+      "id": "led3",
+      "top": 102,
+      "left": -217,
+      "attrs": {
+        "color": "red",
+        "label": "LED VERMELHO GPIO16"
+      }
+    },
+    {
+      "type": "wokwi-pushbutton",
+      "id": "btn1",
+      "top": 100,
+      "left": 153.6,
+      "attrs": {
+        "color": "green",
+        "xray": "1",
+        "key": "Q",
+        "label": "BTN1 GPIO32 (3V3, ativo HIGH)"
+      }
+    },
+    {
+      "type": "wokwi-pushbutton",
+      "id": "btn2",
+      "top": 35,
+      "left": 153.6,
+      "attrs": {
+        "color": "green",
+        "xray": "1",
+        "key": "W",
+        "label": "BTN2 GPIO33 (3V3, ativo HIGH)"
+      }
+    },
+    {
+      "type": "wokwi-potentiometer",
+      "id": "pot1",
+      "top": -97.3,
+      "left": -211.4,
+      "attrs": {
+        "value": "0"
+      }
+    },
+    {
+      "type": "wokwi-buzzer",
+      "id": "buzzer1",
+      "top": 184.8,
+      "left": 203.4,
+      "attrs": {
+        "volume": "0.15"
+      }
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "r1",
+      "top": 23.15,
+      "left": -163.2,
+      "attrs": {
+        "value": "1000"
+      }
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "r2",
+      "top": 71.15,
+      "left": -153.6,
+      "attrs": {
+        "value": "1000"
+      }
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "r3",
+      "top": 138.35,
+      "left": -144,
+      "attrs": {
+        "value": "1000"
+      }
+    }
+  ],
+  "connections": [
+    [
+      "esp:32",
+      "btn1:1.l",
+      "blue",
+      []
+    ],
+    [
+      "btn1:2.l",
+      "esp:3V3",
+      "red",
+      []
+    ],
+    [
+      "esp:33",
+      "btn2:1.l",
+      "blue",
+      []
+    ],
+    [
+      "btn2:2.l",
+      "esp:3V3",
+      "red",
+      []
+    ],
+    [
+      "pot1:VCC",
+      "esp:3V3",
+      "red",
+      [
+        "h124",
+        "v48"
+      ]
+    ],
+    [
+      "pot1:GND",
+      "esp:GND.1",
+      "black",
+      [
+        "v19.2",
+        "h172.8",
+        "v163.2"
+      ]
+    ],
+    [
+      "pot1:SIG",
+      "esp:34",
+      "green",
+      []
+    ],
+    [
+      "buzzer1:2",
+      "esp:25",
+      "green",
+      [
+        "v-9.6",
+        "h-115.6",
+        "v-153.6"
+      ]
+    ],
+    [
+      "buzzer1:1",
+      "esp:GND.1",
+      "black",
+      [
+        "h-240",
+        "v-115.2"
+      ]
+    ],
+    [
+      "esp:TX",
+      "$serialMonitor:RX",
+      "",
+      []
+    ],
+    [
+      "esp:RX",
+      "$serialMonitor:TX",
+      "",
+      []
+    ],
+    [
+      "esp:3V3",
+      "led1:A",
+      "red",
+      []
+    ],
+    [
+      "led1:C",
+      "r1:1",
+      "green",
+      []
+    ],
+    [
+      "r1:2",
+      "esp:17",
+      "green",
+      []
+    ],
+    [
+      "esp:3V3",
+      "led2:A",
+      "red",
+      []
+    ],
+    [
+      "led2:C",
+      "r2:1",
+      "green",
+      []
+    ],
+    [
+      "r2:2",
+      "esp:18",
+      "green",
+      []
+    ],
+    [
+      "esp:3V3",
+      "led3:A",
+      "red",
+      []
+    ],
+    [
+      "led3:C",
+      "r3:1",
+      "green",
+      []
+    ],
+    [
+      "r3:2",
+      "esp:16",
+      "green",
+      []
+    ]
+  ],
+  "dependencies": {}
+}
