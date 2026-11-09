@@ -27,7 +27,7 @@ static Cafe cafe = CURTO;
 static Reposicao reposicao = AGUA;
 static Estoque estoque;
 static bool falha_memoria = false;
-static bool cafe_na_fila = false; // pediu cafe enquanto a agua esquentava
+static bool cafe_na_fila = false; // pediu cafe enquanto a maquina esquentava
 
 static Botao botao1, botao2;
 static int pot = 0;       // 0..4095, ja calibrado
@@ -73,8 +73,8 @@ static void mostrar_receita(void) {
 // so uma linha com a estimativa: o resto da espera e o led verde piscando.
 static void mostrar_aquecimento(int64_t agora) {
   // arredonda para cima para nao mostrar "0 s" ainda aquecendo.
-  printf("[AQUECENDO] %d mL de agua, de %d ate %d C | estimativa: %d s\n",
-         estoque.agua_ml, aquecedor_temperatura(agora), TEMP_ALVO_C,
+  printf("[AQUECENDO] De %d ate %d C | estimativa: %d s\n",
+         aquecedor_temperatura(agora), TEMP_ALVO_C,
          (int)((aquecedor_restante_ms(agora) + 999) / 1000));
 }
 
@@ -194,7 +194,7 @@ static void sair_manutencao(int64_t agora) {
   // o aquecedor nao para na manutencao: pode ter entrado ainda frio.
   if (aquecedor_restante_ms(agora) > 0) {
     estado = AQUECENDO;
-    printf("[MANUTENCAO] Encerrada. Agua ainda aquecendo.\n");
+    printf("[MANUTENCAO] Encerrada. Ainda aquecendo.\n");
   } else {
     estado = PRONTA;
     printf("[MANUTENCAO] Encerrada. Maquina pronta.\n");
@@ -223,10 +223,6 @@ static void reabastecer(int64_t agora) {
   if (!confirmar_estoque(novo))
     return;
 
-  // agua nova muda o tempo que ainda falta, se estiver aquecendo.
-  if (reposicao == AGUA)
-    aquecedor_ajustar_agua(agora, estoque.agua_ml);
-
   printf("[OK] Reposto +%d %s.\n", quantidade,
          reposicao == AGUA ? "mL de agua" : "capsula(s)");
   mostrar_estoque();
@@ -244,7 +240,7 @@ static void ligar(int64_t agora) {
     return;
   }
   sincronizar_cafe();
-  aquecedor_ligar(agora, estoque.agua_ml);
+  aquecedor_ligar(agora);
   ultima_atividade_ms = agora;
   printf("\n=========== MAQUINA LIGADA ===========\n");
   mostrar_estoque();
@@ -253,10 +249,10 @@ static void ligar(int64_t agora) {
   printf("[INFO] BTN1 por 3 s abre a manutencao.\n");
   som_tocar(SOM_LIGAR);
 
-  // desligou e religou rapido: a agua ainda esta quente e nao precisa esperar.
+  // desligou e religou rapido: o bloco ainda esta quente e nao precisa esperar.
   if (aquecedor_restante_ms(agora) == 0) {
     estado = PRONTA;
-    printf("[PRONTA] Agua ja esta quente. BTN2 prepara.\n");
+    printf("[PRONTA] Maquina ja esta quente. BTN2 prepara.\n");
   } else {
     estado = AQUECENDO;
     mostrar_aquecimento(agora);
@@ -390,14 +386,14 @@ static void alternar_fila(void) {
     return;
   }
   // sem recurso nao entra na fila, mas continua aquecendo em vez de ir para
-  // erro: de erro ela voltaria a pronta ainda com a agua fria.
+  // erro: de erro ela voltaria a pronta ainda fria.
   if (!pode_preparar()) {
     mostrar_falta_recursos();
     som_tocar(SOM_ERRO);
     return;
   }
   cafe_na_fila = true;
-  printf("[FILA] Cafe %s na fila: sai quando a agua aquecer. BTN2 retira.\n",
+  printf("[FILA] Cafe %s na fila: sai quando a maquina aquecer. BTN2 retira.\n",
          nome_cafe());
   som_tocar(SOM_CONFIRMAR);
 }
@@ -408,7 +404,7 @@ static void atualizar_aquecimento(int64_t agora) {
 
   estado = PRONTA;
   ultima_atividade_ms = agora; // os 60 s de inatividade so contam daqui
-  printf("[PRONTA] Agua a %d C. BTN2 prepara.\n", TEMP_ALVO_C);
+  printf("[PRONTA] Maquina a %d C. BTN2 prepara.\n", TEMP_ALVO_C);
   if (cafe_na_fila) {
     cafe_na_fila = false;
     iniciar_preparo(agora);
@@ -442,7 +438,7 @@ static void btn1_clique(int64_t agora) {
 
 static void btn1_longo(int64_t agora) {
   switch (estado) {
-  case AQUECENDO: // repor agua nao depende da agua estar quente
+  case AQUECENDO: // repor agua ou capsula nao depende de estar quente
   case PRONTA:
   case ERRO:
     entrar_manutencao(agora);

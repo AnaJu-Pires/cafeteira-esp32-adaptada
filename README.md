@@ -1,6 +1,6 @@
 # Cafeteira de cápsula com ESP32
 
-Simulador de uma cafeteira de cápsula em uma PCB ESP32 de 38 pinos, com LEDs, dois botões, potenciômetro e buzzer. O firmware usa ESP-IDF e imita o funcionamento de uma máquina real: aquece a água ao ligar, pressuriza a cápsula, extrai o café com vazão realista e desconta água e cápsulas de um estoque salvo na flash.
+Simulador de uma cafeteira de cápsula em uma PCB ESP32 de 38 pinos, com LEDs, dois botões, potenciômetro e buzzer. O firmware usa ESP-IDF e imita o funcionamento de uma máquina real: aquece o bloco de aquecimento ao ligar, pressuriza a cápsula, extrai o café com vazão realista e desconta água e cápsulas de um estoque salvo na flash.
 
 **Autoria:** Ana Julia Pires Oliveira.
 
@@ -46,8 +46,8 @@ A máquina desliga sozinha após 60 s sem uso, exceto enquanto aquece ou prepara
 ```mermaid
 stateDiagram-v2
     [*] --> Desligada
-    Desligada --> Aquecendo: BTN1 (água fria)
-    Desligada --> Pronta: BTN1 (água já quente)
+    Desligada --> Aquecendo: BTN1 (máquina fria)
+    Desligada --> Pronta: BTN1 (máquina já quente)
     Aquecendo --> Pronta: chegou a 86 °C
     Aquecendo --> Preparando: chegou a 86 °C com café na fila
     Aquecendo --> Desligada: BTN1
@@ -58,8 +58,8 @@ stateDiagram-v2
     Pronta --> Manutencao: BTN1 por 3 s
     Aquecendo --> Manutencao: BTN1 por 3 s
     Erro --> Manutencao: BTN1 por 3 s
-    Manutencao --> Pronta: BTN1 por 3 s (água quente)
-    Manutencao --> Aquecendo: BTN1 por 3 s (água fria)
+    Manutencao --> Pronta: BTN1 por 3 s (máquina quente)
+    Manutencao --> Aquecendo: BTN1 por 3 s (máquina fria)
     Pronta --> Desligada: BTN1 ou 60 s parada
     Erro --> Desligada: BTN1 ou 60 s parada
     Manutencao --> Desligada: 60 s parada
@@ -80,8 +80,7 @@ Os valores ficam em `main/config.h`. A referência é a linha Nespresso Original
 
 | Parâmetro | Valor | Origem |
 |---|---|---|
-| Aquecimento com 600 mL | 25 s | Especificação da Essenza Mini ([Nespresso][essenza]), que tem tanque de 0,6 L; algumas páginas regionais citam 30 s |
-| Variação com a água | 10 s + 25 ms por mL | Escolha da simulação, calibrada para dar 25 s com 600 mL |
+| Aquecimento a partir do frio | 25 s | Especificação da Essenza Mini ([Nespresso][essenza]); algumas páginas regionais citam 30 s |
 | Temperatura de preparo | 86 °C | [FAQ da Nespresso][temperatura] |
 | Café curto e longo | 40 mL e 110 mL | [FAQ da Nespresso][volumes] |
 | Vazão | 2 mL/s | Estimativa a partir dos tempos típicos de extração |
@@ -93,11 +92,11 @@ Com isso, o café curto leva 25 s, dentro da faixa usual de 25 a 30 s para um es
 
 Comportamentos que seguem essa lógica:
 
-- **Tempo pela quantidade de água:** do frio, o aquecimento leva de 10 s (tanque vazio) a 35 s (1000 mL). O monitor serial mostra uma única linha com a estimativa, e o LED verde pisca até terminar. Máquinas com thermoblock aquecem a água conforme ela passa, então essa dependência do tanque é uma simplificação do modelo.
-- **Fila de preparo:** BTN2 durante o aquecimento agenda o café, que começa sozinho quando a água esquenta. O café pedido fica travado, e desligar ou entrar na manutenção esvazia a fila.
-- **Religar quente:** a temperatura cai aos poucos com a máquina desligada, então religar logo depois aquece mais rápido. Com 600 mL, após 1 minuto desligada, ela leva cerca de 2,5 s em vez de 25 s.
+- **Aquecimento:** como nas máquinas com thermoblock, o que esquenta é o bloco, e a água só passa por ele na hora do café. Por isso, o tempo é de 25 s com qualquer quantidade de água no tanque. O monitor serial mostra uma única linha com a estimativa, e o LED verde pisca até terminar.
+- **Fila de preparo:** BTN2 durante o aquecimento agenda o café, que começa sozinho quando a máquina esquenta. O café pedido fica travado, e desligar ou entrar na manutenção esvazia a fila.
+- **Religar quente:** a temperatura cai aos poucos com a máquina desligada, então religar logo depois aquece mais rápido. Após 1 minuto desligada, ela leva cerca de 2,5 s em vez de 25 s.
 - **Consumo:** a cápsula é descontada ao iniciar e a água, conforme o café sai. Cancelar durante a pressurização gasta a cápsula, mas não a água.
-- **Manutenção durante o aquecimento:** o aquecimento continua, e repor água recalcula o tempo que falta. Repor água com a máquina já quente não a faz reaquecer.
+- **Manutenção durante o aquecimento:** o aquecimento continua normalmente, e repor água não muda o tempo.
 
 A temperatura é simulada apenas em função do tempo, pois a placa não tem sensor nem resistência de aquecimento.
 
@@ -110,7 +109,7 @@ Para poupar a flash, a gravação durante o preparo acontece a cada 10 mL (a cad
 ## Roteiro de demonstração
 
 1. Aperte BTN1 e veja a estimativa de aquecimento no monitor serial, com o LED verde piscando devagar.
-2. Aperte BTN2 antes de terminar: o LED amarelo acende, e o café começa sozinho quando a água esquenta.
+2. Aperte BTN2 antes de terminar: o LED amarelo acende, e o café começa sozinho quando a máquina esquenta.
 3. Depois, com o verde fixo, escolha o café curto no potenciômetro e aperte BTN2. O café leva 25 s.
 4. Prepare outro e aperte BTN1 no meio para cancelar: só a água já usada é descontada.
 5. Segure BTN1 por 3 s, reponha água e cápsulas com o potenciômetro e BTN2, e segure BTN1 de novo para sair.
@@ -125,7 +124,7 @@ O estoque fica salvo entre as gravações, então pode não recomeçar em 600 mL
 |---|---|
 | `main/main.c` | Ponto de entrada e loop principal, a cada 20 ms |
 | `main/maquina.c` | Máquina de estados: preparo, manutenção, energia, botões e LEDs |
-| `main/aquecedor.c` | Modelo de temperatura da água |
+| `main/aquecedor.c` | Modelo de temperatura do bloco de aquecimento |
 | `main/estoque.c` | Leitura e gravação do estoque na NVS |
 | `main/perifericos.c` | Acesso a GPIO, ADC e PWM: botões, potenciômetro, LEDs e buzzer |
 | `main/config.h` | Pinos, tempos, volumes e demais parâmetros |

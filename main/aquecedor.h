@@ -3,15 +3,13 @@
 
 #include <stdint.h>
 
-// simula o aquecimento da agua: esquenta quando ligado e esfria aos poucos
-// quando desligado. nao tem sensor, e so conta com o tempo.
-void aquecedor_ligar(int64_t agora_ms, int agua_ml);
+// simula o thermoblock de uma cafeteira de capsula: o bloco esquenta quando
+// ligado e esfria aos poucos quando desligado. a agua so passa por ele na hora
+// do cafe, entao o tanque nao muda o tempo. nao tem sensor, so conta o tempo.
+void aquecedor_ligar(int64_t agora_ms);
 void aquecedor_desligar(int64_t agora_ms);
 
-// a quantidade de agua mudou com o aquecedor ligado (reposicao).
-void aquecedor_ajustar_agua(int64_t agora_ms, int agua_ml);
-
-// temperatura simulada da agua, em graus celsius.
+// temperatura simulada do bloco, em graus celsius.
 int aquecedor_temperatura(int64_t agora_ms);
 
 // quanto falta para chegar na temperatura de preparo (0 = ja esta quente).

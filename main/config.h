@@ -36,13 +36,12 @@
 #define PASSO_EXTRACAO_MS (PASSO_EXTRACAO_ML * 1000 / VAZAO_ML_SEGUNDO)
 
 // ---------- aquecimento ----------
-// essenza mini: tanque de 0,6 l e cerca de 25 s para aquecer. nespresso informa
-// preparo a 86 c. o tempo varia com a agua: 10 s do corpo da maquina + 25 ms
-// por ml, e assim 600 ml dao os 25 s reais (0 ml = 10 s, 1000 ml = 35 s).
+// essenza mini: cerca de 25 s para aquecer. nespresso informa preparo a 86 c.
+// o que esquenta e o bloco (thermoblock), e a agua so passa por ele na hora do
+// cafe. por isso o tempo e o mesmo com o tanque cheio ou quase vazio.
 #define TEMP_AMBIENTE_C 25
 #define TEMP_ALVO_C 86
-#define AQUECIMENTO_BASE_MS 10000
-#define AQUECIMENTO_MS_POR_ML 25
+#define AQUECIMENTO_MS 25000 // tempo para ir do ambiente ate o alvo
 // desligada ela esfria aos poucos (estimativa, nao e dado de fabricante).
 #define RESFRIAMENTO_C_MINUTO 6
 
@@ -76,8 +75,7 @@ _Static_assert(CAFE_CURTO_ML % PASSO_EXTRACAO_ML == 0, "curto fora do passo");
 _Static_assert(CAFE_LONGO_ML % PASSO_EXTRACAO_ML == 0, "longo fora do passo");
 _Static_assert(VAZAO_ML_SEGUNDO > 0, "vazao precisa ser positiva");
 _Static_assert(TEMP_ALVO_C > TEMP_AMBIENTE_C, "alvo abaixo do ambiente");
-_Static_assert(AQUECIMENTO_BASE_MS > 0,
-               "aquecimento base precisa ser positivo");
+_Static_assert(AQUECIMENTO_MS > 0, "aquecimento precisa ser positivo");
 _Static_assert(AMOSTRAS_ADC > 2, "a media descarta 2 amostras");
 _Static_assert(POT_ADC_MAXIMO > POT_ADC_MINIMO, "faixa do pot invertida");
 
