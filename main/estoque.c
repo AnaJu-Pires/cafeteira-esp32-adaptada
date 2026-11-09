@@ -10,7 +10,7 @@
 #define NVS_CHAVE "dados"
 #define VERSAO_DADOS 1
 
-// Um registro so evita salvar agua e capsulas separadamente.
+// um registro so evita salvar agua e capsulas separadamente.
 typedef struct {
   uint32_t versao;
   int32_t agua_ml;
@@ -52,7 +52,7 @@ esp_err_t estoque_iniciar(Estoque *dados) {
   esp_err_t erro = nvs_flash_init();
   if (erro == ESP_ERR_NVS_NO_FREE_PAGES ||
       erro == ESP_ERR_NVS_NEW_VERSION_FOUND) {
-    // flash de outro projeto ou formato antigo: a NVS ja nao e legivel.
+    // flash de outro projeto ou formato antigo: a nvs ja nao e legivel.
     printf("[NVS] Particao incompativel. Formatando.\n");
     erro = nvs_flash_erase();
     if (erro == ESP_OK)
@@ -76,10 +76,14 @@ esp_err_t estoque_iniciar(Estoque *dados) {
     printf("[NVS] Primeiro uso: criando estoque inicial.\n");
     return estoque_salvar(dados);
   }
-  if (erro != ESP_OK)
+  // registro maior que o esperado (versao antiga) tambem conta como invalido,
+  // senao a maquina ficaria travada em falha de nvs ate apagar a flash.
+  bool grande_demais = erro == ESP_ERR_NVS_INVALID_LENGTH;
+  if (erro != ESP_OK && !grande_demais)
     return erro;
 
-  if (tamanho != sizeof(registro) || !dados_validos(&registro)) {
+  if (grande_demais || tamanho != sizeof(registro) ||
+      !dados_validos(&registro)) {
     estoque_inicial(dados);
     printf("[NVS] Dados invalidos. Voltando ao estoque inicial.\n");
     return estoque_salvar(dados);

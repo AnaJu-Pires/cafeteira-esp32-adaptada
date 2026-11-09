@@ -1,10 +1,10 @@
-# Cafeteira ESP32 — PCB adaptada
+# Cafeteira de cápsula com ESP32
 
-Adaptação do simulador de cafeteira escrito pela colega para uma **segunda PCB ESP32 de 38 pinos**, reutilizando LEDs, dois botões, potenciômetro e buzzer montados no projeto da lavadora.
+Simulador de uma cafeteira de cápsula em uma PCB ESP32 de 38 pinos, com LEDs, dois botões, potenciômetro e buzzer. O firmware usa ESP-IDF e imita o funcionamento de uma máquina real: aquece a água ao ligar, pressuriza a cápsula, extrai o café com vazão realista e desconta água e cápsulas de um estoque salvo na flash.
 
-> **Créditos:** lógica da cafeteira baseada no trabalho da colega responsável; adaptação de pinagem, polaridade dos botões e acionamento dos LEDs para a PCB alternativa. Preencha os nomes após combinar os créditos e obtenha autorização antes de tornar o código público.
+**Autoria:** Ana Julia Pires Oliveira, a partir do repositório [dudaselvatti/cafeteira-esp32-adaptada](https://github.com/dudaselvatti/cafeteira-esp32-adaptada).
 
-## Hardware e diferenças da PCB original
+## Hardware
 
 | Periférico | GPIO | Observação |
 |---|---:|---|
@@ -16,35 +16,122 @@ Adaptação do simulador de cafeteira escrito pela colega para uma **segunda PCB
 | Potenciômetro | 34 | ADC1_CH6 |
 | Buzzer | 25 | PWM, com transistor BC337 |
 
-A lógica da cafeteira foi mantida; a adaptação física fica principalmente em `main/config.h` e `main/perifericos.c`.
+Este firmware é exclusivo desta PCB. Gravado na placa original, botões e LEDs podem não responder, porque os GPIOs e as polaridades são diferentes.
 
-## Estado de validação
+## Como compilar e gravar
 
-A usuária confirmou **compilação com ESP-IDF 5.5.6 e funcionamento dos comandos principais na placa física**, com logs de preparo, manutenção, cancelamento e estoque. A versão presente inclui a correção dos LEDs para acionamento ativo em LOW; **confirme visualmente o resultado dessa última correção** antes da aula.
+Requer ESP-IDF 5.5.6. Na raiz do projeto, com o ambiente do ESP-IDF ativo:
 
-## Preparação e gravação
-
-Use ESP-IDF 5.5.6 no VS Code ou ESP-IDF PowerShell. Na raiz desta pasta:
-
-```powershell
-idf.py set-target esp32
+```bash
+idf.py set-target esp32   # só na primeira configuração
 idf.py build
-idf.py -p COM3 flash monitor
+idf.py -p /dev/ttyUSB0 flash monitor
 ```
 
-Troque `COM3` pela porta atual. Execute `set-target` somente na primeira configuração ou se estiver configurado para outro chip.
+Troque `/dev/ttyUSB0` pela porta da placa (no Windows, algo como `COM3`). Para sair do monitor, use `Ctrl + ]`.
 
-Alternativa: `./gravar.cmd COM3` no PowerShell ESP-IDF, depois da configuração inicial.
+## Como usar
 
-## Controles
+| Controle | Função |
+|---|---|
+| BTN1 curto | Liga e desliga; durante o preparo, cancela; na manutenção, troca entre água e cápsulas |
+| BTN2 curto | Inicia o preparo; aquecendo, põe o café na fila ou tira dela; na manutenção, confirma a reposição |
+| BTN1 por 3 s | Entra ou sai da manutenção |
+| Potenciômetro | Escolhe café curto ou longo; na manutenção, escolhe a quantidade |
 
-- BTN1 curto: liga/desliga; durante preparo, cancela.
-- BTN2 curto: inicia preparo; confirma reposição na manutenção.
-- BTN1 por 3 s: entra ou sai da manutenção, quando permitido.
-- POT: café curto (40 mL / 4 s), café longo (120 mL / 12 s) ou quantidade para reposição.
-- NVS: armazena estoque; valores sobrevivem ao reinício.
-- Inatividade: desligamento após 60 s fora do preparo.
+A máquina desliga sozinha após 60 s sem uso, exceto enquanto aquece ou prepara um café.
 
-Veja [GUIA_DEMONSTRACAO.md](GUIA_DEMONSTRACAO.md) para a sequência de testes.
+## Estados e LEDs
 
-Não misture este projeto com o da placa original. A gravação na PCB original pode fazer botões e LEDs não responderem porque **os GPIOs e as polaridades são diferentes**.
+```mermaid
+stateDiagram-v2
+    [*] --> Desligada
+    Desligada --> Aquecendo: BTN1 (água fria)
+    Desligada --> Pronta: BTN1 (água já quente)
+    Aquecendo --> Pronta: chegou a 86 °C
+    Aquecendo --> Preparando: chegou a 86 °C com café na fila
+    Aquecendo --> Desligada: BTN1
+    Pronta --> Preparando: BTN2
+    Preparando --> Pronta: terminou ou BTN1 cancela
+    Pronta --> Erro: BTN2 sem recursos
+    Erro --> Pronta: recursos suficientes
+    Pronta --> Manutencao: BTN1 por 3 s
+    Aquecendo --> Manutencao: BTN1 por 3 s
+    Erro --> Manutencao: BTN1 por 3 s
+    Manutencao --> Pronta: BTN1 por 3 s (água quente)
+    Manutencao --> Aquecendo: BTN1 por 3 s (água fria)
+    Pronta --> Desligada: BTN1 ou 60 s parada
+    Erro --> Desligada: BTN1 ou 60 s parada
+    Manutencao --> Desligada: 60 s parada
+```
+
+| Estado | LED |
+|---|---|
+| Desligada | Todos apagados |
+| Aquecendo | Verde piscando devagar; amarelo fixo se houver café na fila |
+| Pronta | Verde fixo |
+| Preparando | Amarelo piscando |
+| Manutenção | Verde piscando (água) ou amarelo piscando (cápsulas) |
+| Erro ou falha de memória | Vermelho fixo |
+
+## Simulação baseada em máquinas reais
+
+Os valores ficam em `main/config.h`. A referência é a linha Nespresso Original.
+
+| Parâmetro | Valor | Origem |
+|---|---|---|
+| Aquecimento com 600 mL | 25 s | Especificação da Essenza Mini ([Nespresso][essenza]), que tem tanque de 0,6 L; algumas páginas regionais citam 30 s |
+| Variação com a água | 10 s + 25 ms por mL | Escolha da simulação, calibrada para dar 25 s com 600 mL |
+| Temperatura de preparo | 86 °C | [FAQ da Nespresso][temperatura] |
+| Café curto e longo | 40 mL e 110 mL | [FAQ da Nespresso][volumes] |
+| Vazão | 2 mL/s | Estimativa a partir dos tempos típicos de extração |
+| Pressurização da cápsula | 5 s | Estimativa |
+| Resfriamento desligada | 6 °C por minuto | Estimativa |
+| Temperatura ambiente | 25 °C | Suposição |
+
+Com isso, o café curto leva 25 s, dentro da faixa usual de 25 a 30 s para um espresso. O longo leva 60 s. As fontes divergem bastante sobre o lungo (cerca de 30 a 60 s), e 60 s é consequência de manter a mesma vazão nos dois cafés.
+
+Comportamentos que seguem essa lógica:
+
+- **Tempo pela quantidade de água:** do frio, o aquecimento leva de 10 s (tanque vazio) a 35 s (1000 mL). O monitor serial mostra uma única linha com a estimativa, e o LED verde pisca até terminar. Máquinas com thermoblock aquecem a água conforme ela passa, então essa dependência do tanque é uma simplificação do modelo.
+- **Fila de preparo:** BTN2 durante o aquecimento agenda o café, que começa sozinho quando a água esquenta. O café pedido fica travado, e desligar ou entrar na manutenção esvazia a fila.
+- **Religar quente:** a temperatura cai aos poucos com a máquina desligada, então religar logo depois aquece mais rápido. Com 600 mL, após 1 minuto desligada, ela leva cerca de 2,5 s em vez de 25 s.
+- **Consumo:** a cápsula é descontada ao iniciar e a água, conforme o café sai. Cancelar durante a pressurização gasta a cápsula, mas não a água.
+- **Manutenção durante o aquecimento:** o aquecimento continua, e repor água recalcula o tempo que falta. Repor água com a máquina já quente não a faz reaquecer.
+
+A temperatura é simulada apenas em função do tempo, pois a placa não tem sensor nem resistência de aquecimento.
+
+## Estoque na memória flash
+
+Água, cápsulas e o indicador de preparo em andamento ficam em um único registro na NVS, então os valores sobrevivem ao reinício. O estoque só muda na RAM depois de gravado com sucesso. Se a gravação falhar, a máquina bloqueia preparo e reposição até ser reiniciada.
+
+Para poupar a flash, a gravação durante o preparo acontece a cada 10 mL (a cada 5 s), o que dá 5 gravações no café curto e 12 no longo. Se a placa reiniciar no meio do preparo, o café é descartado e o erro na conta da água fica limitado a menos de 10 mL.
+
+## Roteiro de demonstração
+
+1. Aperte BTN1 e veja a estimativa de aquecimento no monitor serial, com o LED verde piscando devagar.
+2. Aperte BTN2 antes de terminar: o LED amarelo acende, e o café começa sozinho quando a água esquenta.
+3. Depois, com o verde fixo, escolha o café curto no potenciômetro e aperte BTN2. O café leva 25 s.
+4. Prepare outro e aperte BTN1 no meio para cancelar: só a água já usada é descontada.
+5. Segure BTN1 por 3 s, reponha água e cápsulas com o potenciômetro e BTN2, e segure BTN1 de novo para sair.
+6. Desligue, religue em seguida e veja que a máquina não precisa aquecer tudo de novo.
+7. Reinicie a placa e confira que o estoque foi mantido.
+
+O estoque fica salvo entre as gravações, então pode não recomeçar em 600 mL e 3 cápsulas.
+
+## Estrutura do código
+
+| Arquivo | Responsabilidade |
+|---|---|
+| `main/main.c` | Ponto de entrada e loop principal, a cada 20 ms |
+| `main/maquina.c` | Máquina de estados: preparo, manutenção, energia, botões e LEDs |
+| `main/aquecedor.c` | Modelo de temperatura da água |
+| `main/estoque.c` | Leitura e gravação do estoque na NVS |
+| `main/perifericos.c` | Acesso a GPIO, ADC e PWM: botões, potenciômetro, LEDs e buzzer |
+| `main/config.h` | Pinos, tempos, volumes e demais parâmetros |
+
+Nada no loop principal bloqueia: tempos, melodias e leituras são controlados por comparação com o relógio, então os botões respondem mesmo durante o preparo.
+
+[essenza]: https://nespresso.com/au/en/essenza-mini-coffee-machine
+[temperatura]: https://www.contact.nespresso.com/faq/pl/en/detail/817
+[volumes]: https://www.contact.nespresso.com/faq/nz/en/detail/1166

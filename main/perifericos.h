@@ -6,7 +6,7 @@
 
 #include "driver/gpio.h"
 
-// Botao com debounce. A cada botao_atualizar() os eventos valem so uma vez:
+// botao com debounce. a cada botao_atualizar() os eventos valem so uma vez:
 //   clique = soltou sem ter sido pressao longa
 //   longo  = completou o tempo de pressao longa (ainda segurado)
 typedef struct {
@@ -35,8 +35,8 @@ void botao_iniciar(Botao *botao, gpio_num_t pino, int64_t longo_ms,
                    int64_t agora_ms);
 void botao_atualizar(Botao *botao, int64_t agora_ms);
 
-// Retorna 0..POT_ESCALA-1 ja calibrado, ou -1 se o ADC falhar.
-// "bruto" recebe a media crua do ADC e pode ser NULL.
+// retorna a posicao do pot ja calibrada (0..4095), ou -1 se o adc falhar.
+// "bruto" recebe a media crua do adc e pode ser nulo.
 int potenciometro_ler(int *bruto);
 
 void leds_mostrar(bool verde, bool amarelo, bool vermelho);

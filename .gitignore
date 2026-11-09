@@ -1,0 +1,11 @@
+# gerados pelo esp-idf (o sdkconfig sai do sdkconfig.defaults)
+build/
+managed_components/
+sdkconfig
+sdkconfig.old
+dependencies.lock
+
+# configuracao local do editor e de ferramentas
+.vscode/
+.agents/
+.codex/

@@ -6,7 +6,7 @@
 #include "esp_err.h"
 #include "perifericos.h"
 
-// buzzer: PWM (LEDC) com 50% de duty e frequencia = nota.
+// buzzer: pwm (ledc) com 50% de duty e frequencia = nota.
 #define PWM_MODO LEDC_LOW_SPEED_MODE
 #define PWM_TIMER LEDC_TIMER_0
 #define PWM_CANAL LEDC_CHANNEL_0
@@ -14,7 +14,7 @@
 #define PWM_DUTY 512 // 50% em 10 bits
 
 typedef struct {
-  int frequencia; // Hz (0 = pausa)
+  int frequencia; // hz (0 = pausa)
   int tempo_ms;
 } Nota;
 
@@ -35,13 +35,17 @@ static int nota_atual = 0;
 static int64_t fim_nota_ms = 0;
 
 void perifericos_iniciar(void) {
+  // leds sao ativos em low: ja deixa o nivel alto antes de virar saida, senao
+  // eles dao uma piscada no boot.
+  leds_mostrar(false, false, false);
+
   gpio_config_t saidas = {.pin_bit_mask = (1ULL << LED_VERDE) |
                                           (1ULL << LED_AMARELO) |
                                           (1ULL << LED_VERMELHO),
                           .mode = GPIO_MODE_OUTPUT};
   ESP_ERROR_CHECK(gpio_config(&saidas));
 
-  // Botoes da PCB ligados a 3V3: pull-down interno; pressionado = nivel alto.
+  // botoes da pcb ligados a 3v3: pull-down interno; pressionado = nivel alto.
   gpio_config_t entradas = {.pin_bit_mask =
                                 (1ULL << BTN1_PIN) | (1ULL << BTN2_PIN),
                             .mode = GPIO_MODE_INPUT,
@@ -68,8 +72,6 @@ void perifericos_iniciar(void) {
   adc_oneshot_chan_cfg_t pot_cfg = {.atten = ADC_ATTEN_DB_12,
                                     .bitwidth = ADC_BITWIDTH_12};
   ESP_ERROR_CHECK(adc_oneshot_config_channel(adc, POT_CANAL, &pot_cfg));
-
-  leds_mostrar(false, false, false);
 }
 
 // ---------- botoes ----------
@@ -98,7 +100,7 @@ void botao_atualizar(Botao *botao, int64_t agora_ms) {
     botao->ultima_mudanca_ms = agora_ms;
   }
 
-  // so aceita a mudanca depois de DEBOUNCE_MS estavel.
+  // so aceita a mudanca depois de ficar estavel pelo tempo do debounce.
   if (leitura != botao->pressionado &&
       agora_ms - botao->ultima_mudanca_ms >= DEBOUNCE_MS) {
     botao->pressionado = leitura;
@@ -122,7 +124,7 @@ void botao_atualizar(Botao *botao, int64_t agora_ms) {
 int potenciometro_ler(int *bruto) {
   int soma = 0, menor = INT_MAX, maior = INT_MIN;
 
-  // o ADC do ESP32 tem ruido: media sem a menor e a maior amostra.
+  // o adc do esp32 tem ruido: media sem a menor e a maior amostra.
   for (int i = 0; i < AMOSTRAS_ADC; i++) {
     int leitura;
     if (adc_oneshot_read(adc, POT_CANAL, &leitura) != ESP_OK)
@@ -138,7 +140,7 @@ int potenciometro_ler(int *bruto) {
   if (bruto)
     *bruto = media;
 
-  // converte a faixa calibrada do pot para 0..POT_ESCALA-1.
+  // converte a faixa calibrada do pot para a escala normalizada.
   if (media <= POT_ADC_MINIMO)
     return 0;
   if (media >= POT_ADC_MAXIMO)
@@ -149,7 +151,7 @@ int potenciometro_ler(int *bruto) {
 
 // ---------- leds ----------
 
-// PCB adaptada: LEDs ativos em LOW (0 liga, 1 desliga).
+// pcb adaptada: leds ativos em low (0 liga, 1 desliga).
 void leds_mostrar(bool verde, bool amarelo, bool vermelho) {
   gpio_set_level(LED_VERDE, !verde);
   gpio_set_level(LED_AMARELO, !amarelo);
@@ -169,8 +171,10 @@ void som_parar(void) {
 }
 
 #define TOCAR(vetor)                                                           \
-  melodia = vetor;                                                             \
-  total_notas = sizeof(vetor) / sizeof(vetor[0])
+  do {                                                                         \
+    melodia = (vetor);                                                         \
+    total_notas = sizeof(vetor) / sizeof((vetor)[0]);                          \
+  } while (0)
 
 void som_tocar(Som som) {
   switch (som) {

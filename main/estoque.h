@@ -11,10 +11,10 @@ typedef struct {
   bool preparando; // fica salvo para saber se houve interrupcao
 } Estoque;
 
-// Le da memoria flash. Na primeira execucao, salva o estoque inicial.
+// le da memoria flash. na primeira execucao, salva o estoque inicial.
 esp_err_t estoque_iniciar(Estoque *dados);
 
-// Salva agua, capsulas e preparo juntos, na memoria NVS.
+// salva agua, capsulas e preparo juntos, na memoria nvs.
 esp_err_t estoque_salvar(const Estoque *dados);
 
 #endif
