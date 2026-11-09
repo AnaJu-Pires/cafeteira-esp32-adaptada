@@ -2,7 +2,7 @@
 
 Simulador de uma cafeteira de cápsula em uma PCB ESP32 de 38 pinos, com LEDs, dois botões, potenciômetro e buzzer. O firmware usa ESP-IDF e imita o funcionamento de uma máquina real: aquece a água ao ligar, pressuriza a cápsula, extrai o café com vazão realista e desconta água e cápsulas de um estoque salvo na flash.
 
-**Autoria:** Ana Julia Pires Oliveira, a partir do repositório [dudaselvatti/cafeteira-esp32-adaptada](https://github.com/dudaselvatti/cafeteira-esp32-adaptada).
+**Autoria:** Ana Julia Pires Oliveira.
 
 ## Hardware
 
